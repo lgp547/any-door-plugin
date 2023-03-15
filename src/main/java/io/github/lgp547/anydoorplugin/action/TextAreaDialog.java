@@ -1,12 +1,6 @@
 package io.github.lgp547.anydoorplugin.action;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.*;
 import com.intellij.ide.highlighter.HighlighterFactory;
 import com.intellij.json.JsonFileType;
 import com.intellij.openapi.editor.Document;
@@ -14,14 +8,7 @@ import com.intellij.openapi.editor.ex.EditorEx;
 import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiClassType;
-import com.intellij.psi.PsiDocumentManager;
-import com.intellij.psi.PsiFile;
-import com.intellij.psi.PsiFileFactory;
-import com.intellij.psi.PsiParameter;
-import com.intellij.psi.PsiParameterList;
-import com.intellij.psi.PsiType;
+import com.intellij.psi.*;
 import com.intellij.ui.EditorTextField;
 import com.intellij.ui.components.JBPanel;
 import com.intellij.util.LocalTimeCounter;
@@ -33,14 +20,11 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
+import java.awt.event.*;
 import java.net.URI;
 import java.net.URL;
 import java.time.temporal.Temporal;
 import java.util.*;
-
-import static org.jetbrains.java.generate.psi.PsiAdapter.isMapType;
 
 public class TextAreaDialog extends DialogWrapper {
     private final ContentPanel contentPanel;
