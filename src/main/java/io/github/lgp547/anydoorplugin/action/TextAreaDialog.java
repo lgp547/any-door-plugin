@@ -1,12 +1,7 @@
 package io.github.lgp547.anydoorplugin.action;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
 import com.intellij.ide.highlighter.HighlighterFactory;
 import com.intellij.json.JsonFileType;
 import com.intellij.openapi.editor.Document;
@@ -14,14 +9,7 @@ import com.intellij.openapi.editor.ex.EditorEx;
 import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiClassType;
-import com.intellij.psi.PsiDocumentManager;
-import com.intellij.psi.PsiFile;
-import com.intellij.psi.PsiFileFactory;
-import com.intellij.psi.PsiParameter;
-import com.intellij.psi.PsiParameterList;
-import com.intellij.psi.PsiType;
+import com.intellij.psi.*;
 import com.intellij.ui.EditorTextField;
 import com.intellij.ui.components.JBPanel;
 import com.intellij.util.LocalTimeCounter;
@@ -33,14 +21,16 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
+import java.awt.event.*;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.time.temporal.Temporal;
 import java.util.*;
-
-import static org.jetbrains.java.generate.psi.PsiAdapter.isMapType;
+import java.util.stream.Collectors;
 
 public class TextAreaDialog extends DialogWrapper {
     private final ContentPanel contentPanel;
@@ -94,9 +84,14 @@ public class TextAreaDialog extends DialogWrapper {
             GridBagConstraints constraints1 = new GridBagConstraints();
             constraints1.anchor = GridBagConstraints.EAST;
 
+            JPanel functionPanel = new JPanel();
             JButton jButton1 = new JButton("gen json param");
-            add(jButton1, constraints1);
-
+            JButton jButton2 = new JButton("parse query param");
+            JButton jButton3 = new JButton("gen query param");
+            functionPanel.add(jButton1);
+            functionPanel.add(jButton2);
+            functionPanel.add(jButton3);
+            add(functionPanel, constraints1);
 
             GridBagConstraints constraints = new GridBagConstraints();
             constraints.fill = GridBagConstraints.BOTH;
@@ -132,12 +127,62 @@ public class TextAreaDialog extends DialogWrapper {
 
             jButton1.addActionListener(e -> textArea.setText(getJsonText()));
 
+            jButton2.addActionListener(e -> {
+                String newText = parseQueryParam(textArea.getText());
+                textArea.setText(newText);
+            });
+
+            jButton3.addActionListener(e -> {
+                String newText = genQueryParam(textArea.getText());
+                textArea.setText(newText);
+            });
+
         }
 
         private String getJsonText() {
             JsonObject jsonObject = toParamNameListNew(psiParameterList);
             Gson gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
             return gson.toJson(jsonObject);
+        }
+
+        private String parseQueryParam(String text) {
+            String str = text.contains("?") ? text : "?" + text;
+            try {
+                URI uri = new URI(str);
+                String query = uri.getRawQuery();
+                Map<String, String> queryParams = Arrays.stream(query.split("&"))
+                        .map(param -> param.split("="))
+                        .collect(Collectors.toMap(param -> param[0],
+                                param -> {
+                                    if (param.length > 1) {
+                                        return URLDecoder.decode(param[1], Charset.defaultCharset());
+                                    }
+                                    return "";
+                                }));
+                Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().serializeNulls().create();
+                return gson.toJson(queryParams);
+            } catch (Exception ignored) {
+
+            }
+            return text;
+        }
+
+        private String genQueryParam(String text) {
+            try {
+                Gson gson = new Gson();
+                Type type = new TypeToken<Map<String, Object>>() {
+                }.getType();
+                Map<String, Object> map = gson.fromJson(text, type);
+                String queryParam = map.entrySet().stream()
+                        .map(entry -> entry.getKey()
+                                + "="
+                                + URLEncoder.encode(entry.getValue().toString(), Charset.defaultCharset()))
+                        .collect(Collectors.joining("&"));
+                return "?" + queryParam;
+            } catch (Exception ignored) {
+
+            }
+            return text;
         }
 
     }
@@ -250,8 +295,9 @@ public class TextAreaDialog extends DialogWrapper {
     public static boolean isCollType(Class<?> type) {
         return type.isArray() || Collection.class.isAssignableFrom(type);
     }
+
     public static boolean isMapType(Class<?> type) {
-        return  Map.class.isAssignableFrom(type);
+        return Map.class.isAssignableFrom(type);
     }
 
 
